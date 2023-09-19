@@ -44,3 +44,42 @@ A parkolasok tábla módosítása, automatikusan váltsa ki azt, hogy kerüljön
 Ha nincs a rendszám megkezdett parkolással, vagy akár egyátalán a nyilvántartásban még (szükség szerint) fel kell venni az autok tábla és el kell kezdeni egy parkolást a parkolasok tábla vege mezőjének üresen hagyásával.
 
 
+TRIGGER/Eseményindító
+Lényegében egy olyan "tárolt eljárás", amely nem az adatbázishoz, hanem annak egy táblájához kapcsolódik, hogy amikor a táblán végrehajtásra kerül egy adatmanipuzlációs művelet: INSERT INTO, UPDATE, DELETE, akkor ennek hatására lépjen működésbe.
+
+A TRIGGER-ek esetén lehetőség van NEW. és OLD. minősítéseket használni, amelyekkel egy-egy mező esetén annak az új és régi értéke lesz megkülönböztethető.
+Természetesen az INSERT esetén csak újról beszélhetünk (itt tehát csak NEW. használható)
+UPDATE-nél mindkettő.
+Míg a DELETE esetén csak az OLD. lesz használható.
+
+
+SELECT rendszam FROM tmp ORDER BY RAND() LIMIT 1;
+
+rendszam
+MUO435
+
+SELECT * FROM parkolasok WHERE rendszam="MUO435" AND vege IS NULL;
+
+/DECLARE sorszam INT DEFAULT NULL;
+...
+SET sorszam=(SELECT sorszam FROM parkolasok WHERE rendszam="MUO435" AND vege IS NULL;)
+...
+IF sorszam NOT IS NULL THEN
+...
+ELSE
+...
+END IF;
+/
+
+
+INSERT INTO autok VALUES("MUO435");
+
+(Amennyiben már az autok táblában szerepelne a rendszám az 1062 hibát eredményezve a PRIMARY KEY miatt nem hajtja végre a tábla bővítését
+Programban ez a CONTINUE HANDLER segítségével a 1062 megfogalmazható a kívánt)
+
+INSERT INTO parkolasok(kezdete,rendszam) VALUES(NOW(),"MUO435");
+
+(számláló mező esetén ha törlünk az így kidobott érték újra nem kerül figyelembe vételre)
+
+
+UPDATE parkolasok SET vege=NOW() WHERE rendszam="MUO435" AND vege IS NULL;

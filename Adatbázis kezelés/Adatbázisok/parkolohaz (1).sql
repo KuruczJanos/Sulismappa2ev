@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Gép: 127.0.0.1
--- Létrehozás ideje: 2023. Sze 19. 19:42
+-- Létrehozás ideje: 2023. Sze 19. 20:11
 -- Kiszolgáló verziója: 10.4.28-MariaDB
 -- PHP verzió: 8.2.4
 
@@ -3414,6 +3414,7 @@ INSERT INTO `autok` (`rendszam`) VALUES
 ('EWS'),
 ('EWT'),
 ('EWU'),
+('EWU487'),
 ('EWV'),
 ('EWW'),
 ('EWX'),
@@ -7251,10 +7252,10 @@ INSERT INTO `autok` (`rendszam`) VALUES
 ('KOH'),
 ('KOI'),
 ('KOJ'),
-('KOK'),
-('KOL'),
-('KOM');
+('KOK');
 INSERT INTO `autok` (`rendszam`) VALUES
+('KOL'),
+('KOM'),
 ('KON'),
 ('KOO'),
 ('KOP'),
@@ -14389,10 +14390,10 @@ INSERT INTO `autok` (`rendszam`) VALUES
 ('VCU'),
 ('VCV'),
 ('VCW'),
-('VCX'),
-('VCY'),
-('VCZ');
+('VCX');
 INSERT INTO `autok` (`rendszam`) VALUES
+('VCY'),
+('VCZ'),
 ('VDA'),
 ('VDB'),
 ('VDC'),
@@ -17711,6 +17712,14 @@ CREATE TABLE `parkolasok` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 --
+-- A tábla adatainak kiíratása `parkolasok`
+--
+
+INSERT INTO `parkolasok` (`sorszam`, `kezdete`, `vege`, `rendszam`) VALUES
+(2, '2023-09-19 20:00:04', '2023-09-19 20:10:39', 'EWU487'),
+(3, '2023-09-19 20:09:10', '2023-09-19 20:10:39', 'EWU487');
+
+--
 -- Eseményindítók `parkolasok`
 --
 DROP TRIGGER IF EXISTS `szamlazas`;
@@ -17738,6 +17747,14 @@ CREATE TABLE `szamlak` (
   `rendszam` varchar(6) NOT NULL,
   `osszeg` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+
+--
+-- A tábla adatainak kiíratása `szamlak`
+--
+
+INSERT INTO `szamlak` (`szlaszam`, `kelt`, `rendszam`, `osszeg`) VALUES
+(1, '2023-09-19', 'EWU487', 100),
+(2, '2023-09-19', 'EWU487', 10);
 
 -- --------------------------------------------------------
 
@@ -17799,13 +17816,13 @@ ALTER TABLE `szamlak`
 -- AUTO_INCREMENT a táblához `parkolasok`
 --
 ALTER TABLE `parkolasok`
-  MODIFY `sorszam` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `sorszam` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT a táblához `szamlak`
 --
 ALTER TABLE `szamlak`
-  MODIFY `szlaszam` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `szlaszam` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- Megkötések a kiírt táblákhoz
