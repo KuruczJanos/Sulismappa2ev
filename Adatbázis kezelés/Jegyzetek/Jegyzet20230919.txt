@@ -1,0 +1,46 @@
+DELIMITER //
+CREATE FUNCTION datummuvelet(dt1 DATETIME,dt2 DATETIME) RETURNS INT 
+BEGIN
+	DECLARE kulonbseg INT;
+	#SELECT "2023-09-19 17:10:23";
+    SET kulonbseg=dt1-dt2;
+    RETURN kulonbseg;
+END//
+DELIMITER ;
+
+Ismerkedés a dátum és idő adattípusokkal
+
+SELECT datummuvelet("2023-09-19 20:15","2023-09-19 17:18");
+
+29700 -> 2:57 (2 óra 57 perc)
+
+millisecundum -> 29,7 secundum
+
+perc -> 495 óra
+
+secundum -> 495 perc -> 8,25 óra
+
+TIMESTAMP adattípus lényegében megegyezik a DATETIME-mal, viszont ehhez létezik egy TIMESTAMPDIFF MySQL függvény, amely vár tőlünk egy viszonyítási alapot: YEAR, MONTH, DAY, HOUR, MINUTE, SECOND,... és két további argumentumot 1. KIVONANDÓ, 2. KISEBBÍTENDŐ és ezek alapján végzi el a számítást.
+
+Parkolásokkal kapcsolatban természetes, hogy órára, vagy percre vonatkó egységár kerül megadásra.
+
+
+Üzemidő nyilvántartásnál egy berendezésről tudjuk, hogy 21435:12:58 működött már
+A berendezést bekapcsolták és további 14:55:39 működött mennyi az üzemideje aktuálisan
+
+ 21435:12:58
++   14:55:39
+    11  1 1 <= átvitel/növekmény a 60 mp = 1 perc, 60 perc = 1 óra összefüggések miatt
+------------
+ 21450:08:37
+
+
+Működés:
+
+Egy véletlenszerű 1000 és 10000 közötti számot 0-ig csökkentünk, hogy akkor legyen a tmp táblából egy véletlen rendszám kiválasztva (Ez kerül a kamera látókörébe)
+A rendszám hatására végre kell hajtani egy ellenőrzést a parkolasok táblán, hogy szerepel-e abban az adott rendszám megkezdett parkolással (a vege NULL értéket tartalmaz)
+Ha szerepel megkezdett parkolással, akkor le kell zárni azt, megadva az aktuális dátum és idő értéket a vege mezőben (NOW függvény a most aktuális év, hó, nap, óra, perc értéket szolgáltatja és az UPDATE művelet lesz még szükséges)
+A parkolasok tábla módosítása, automatikusan váltsa ki azt, hogy kerüljön a szamlak táblába egy újabb sor.
+Ha nincs a rendszám megkezdett parkolással, vagy akár egyátalán a nyilvántartásban még (szükség szerint) fel kell venni az autok tábla és el kell kezdeni egy parkolást a parkolasok tábla vege mezőjének üresen hagyásával.
+
+

@@ -1,0 +1,110 @@
+A webböngésző, tulajdonképpen egy interaktív front-end felületet biztosít a PHPMYADMIN back-en programnak köszenhetően, hogy annak segítségével végülis tudjuk a szintén back-end-heu sorolható MySQL-t is programozási célból használni.
+
+Az Apache-hoz kapcsolódóan mindenképp kell a http 80-as és a https 443-as port-jának internet felől történő elésének a biztosítása (PUBLIKUS)
+Az adatbázis szolgáltatás viszont nem rendelkezik publikus kapcsolódással, a MySQL 3306 port-ja csak helyben localhost-os környezetben lesz elérhető.
+
+
+A parkolóház szimuláció működése:
+
+egy kamera érzékeli egy jármű rendszámát és a felismert rendszámot egy feldolgozó programnak továbbítja
+
+amint megérkezik a rendszám a feldolgozó programhoz, az bezonosítja, hogy szerepel-e már nyilvántartásban egy megkezdett parkolás következtében, ekkor lezárásra kerül a parkolás bejegyezve annak végét, amennyiben nincs a nyilvántartásban, vagy úgy szerepel a nyilvántartásban mint egy lezárt parkolás dokumentálása új parkolásként rögzíti az eseményt bejegyezve a parkolás kezdetét
+
+
+
+DROP PROCEDURE IF EXISTS veletlen_rendszam;
+DELIMITER %%
+CREATE PROCEDURE veletlen_rendszam()
+BEGIN
+	# deklarációk: változók, lekérdezési mutató (CURSOR) és eseménykezelő
+	-- hely és sorrend
+	DECLARE rendszam VARCHAR(6) DEFAULT NULL;
+	DECLARE kod1 INT;
+	DECLARE kod2 INT;
+	DECLARE kod3 INT;
+	-- SELECT kod*3;
+	-- SET kod=FLOOR(RAND()*26+65);
+	-- SELECT rendszam+CHAR(kod);
+	-- SET rendszam=CONCAT(CHAR(kod),CHAR(kod),CHAR(kod),"123");
+	-- SELECT kod,rendszam;
+	SET kod1=65;
+	WHILE kod1<=90 DO
+		SET kod2=65;
+		WHILE kod2<=90 DO
+			SET kod3=65;
+			WHILE kod3<=90 DO
+				SET rendszam=CONCAT(CHAR(kod1),CHAR(kod2),CHAR(kod3));
+				INSERT INTO autok(rendszam) VALUES(rendszam);
+				SET kod3=kod3+1;
+			END WHILE;
+			SET kod2=kod2+1;
+		END WHILE;
+		SET kod1=kod1+1;
+	END WHILE;
+		
+END%%
+DELIMITER ;
+
+
+AAA000-tól ZZZ999-ig 
+
+Van 26 betűnk, amit 3 pozíción használunk: 26*26*26*1000=17576000
+
+
+SELECT * FROM `autok` WHERE rendszam LIKE "%Z%";
+Jól látható, hogy a % jel csak string-en belül és szimplán használatos így nem okoz gondot a DELIMITER %% meghatározása.
+
+DELETE FROM autok;
+
+
+
+
+
+DROP PROCEDURE IF EXISTS veletlen_rendszam;
+DELIMITER $$
+CREATE PROCEDURE veletlen_rendszam()
+BEGIN
+	DECLARE kod INT;
+	DECLARE rendszam VARCHAR(6) DEFAULT "";
+	DECLARE i INT DEFAULT 1;
+	DECLARE db INT;
+	DECLARE vege INT DEFAULT 0;
+	DECLARE rsz VARCHAR(6);
+	DECLARE mutato CURSOR FOR SELECT rendszam FROM tmp;
+	DECLARE CONTINUE HANDLER FOR NOT FOUND SET vege=1;
+	CREATE TABLE IF NOT EXISTS tmp(rendszam VARCHAR(6));
+	SET db=(SELECT COUNT(*) FROM tmp);
+	WHILE db<=10 DO
+		WHILE i<=3 DO
+			SET rendszam=CONCAT(rendszam,CHAR(FLOOR(RAND()*26+65)));
+			SET i=i+1;
+		END WHILE;
+		SET i=1;
+		WHILE i<=3 DO
+			SET rendszam=CONCAT(rendszam,CHAR(FLOOR(RAND()*10+48)));
+			SET i=i+1;
+		END WHILE;
+		OPEN mutato;
+		ciklus: LOOP
+			FETCH mutato INTO rsz;
+			IF vege THEN
+				LEAVE ciklus;
+			END IF;
+			IF rendszam=rsz THEN
+				LEAVE ciklus;
+			END IF;
+		END LOOP ciklus;
+		CLOSE mutato;
+		IF vege THEN
+			INSERT INTO tmp(rendszam) VALUES(rendszam);
+			SET db=db+1;
+		END IF;
+		SET rendszam="";
+		SET i=1;
+	END WHILE;
+END$$
+DELIMITER ;
+
+
+
+CURSOR-nak nevezzük azt az azonosítót, amit egy konkrét lekérdezéshez kapcsolódóan szeretnénk a lekérdezés eredményhalmazának a feldolgozása érdekében hassználni.

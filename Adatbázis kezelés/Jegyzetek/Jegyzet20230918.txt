@@ -1,0 +1,95 @@
+Tervezzük meg egy légitársaság adatbázisát!
+
+Vannak repülők, azok egy menetrend alapján adott helyről egy másik helyre teljesítenek járatokat.
+A nyilvántartás vezetésével az az elsődleges cél, hogy legyen pontosan tudható mindegyik repülőről hány óra hány perc összesített repült ideje van, mert ez alapján pl. 5000 óránként szükséges időszakos karbantartásokat végrehajtani.
+
+Honnan	Hova	Datum1 Indulas	Datum2	Erkezes	Repulo ID	Repult ora	Repult perc
+	
+
+
+Képzeljük el azt az esetet, hogy egy járat 2023-09-18 21:20 száll fel és megérkezik a célállomásra 2023-09-19 0:55-kor
+
+
+
+Egyed
+
+repulok(lajstromjel*,tipus,gyartasiev,szemelyek,...,osszrepultora,osszrepultperc)
+
+lastromjel pl. HA-TCO
+Egy repülő esetén előfordulhat több évtizednyi üzemeltetés során, hogy akár 53210:55 végülis az összes reőült ideje, azért nem tárolható óó:pp módon, mert az időadatok jellemezően max 24 óra és max 60 perc nyilvántartására alkalmasak.
+
+23:57+1:20=25:17 (1:17) -> a látottak alapján azt a konklúziót vonhatjuk le, hogy a specializált adattípussal egyszerűsített aritmetikai műveletek nem lesznek végezhetők.
+
+BEGIN
+	DECLARE osszes DATETIME DEFAULT "2023-09-18 23:57:30";
+	SET osszes=ADDTIME(osszes,ido);
+	SELECT osszes;
+END
+
+Az ilyen törzsel létrehozott tárolt eljárás megmutatta, hogy nyilvántartásunk szempontjaiból teljesen feleslegesen az éééé-hh-nn ki kell egészítse az óó:pp:mm-et.
+
+menetrend(azonosito*,honnan,hova,indulas,erkezes)
+jaratok(jaratszam*,azonosito,lajstromjel,felszallas,leszallas)
+
+
+A bemutatott 3 egyed használata során azt mutatja, hogy jellemzően csak a jaratok elnevezésűvel kell foglalkozni (INSERT INTO, amikor a járat tényleges felszállt és UPDATE, amikor végülis földet ért)
+
+
+Az adatbázis-kezelők az adatok rögzítésével egyidejűleg hajtják végre az ún. logikai sorbarendezést, vagy INDEX-elést. Ilyet az elsődleges kulcsra és minden INDEX-nek megjelölt mezőre vonatkozóan elvégeznek. (a sorbarendezéshez nélkülözhetetlen nyilvántartás egy külön egységben valósul meg, ami viszon számunkra nem lesz látható)
+
+Sorbarendezés I.:
+
+Kiss, Varga, Török, Tóth, Kocsis, Ernyei, Kovács
+
+^	^
+^		^
+^		      ^
+^			    ^
+^				     ^
+Ernyei, Varga, Török, Tóth, Kocsis, Kiss, Kovács
+^					    ^
+          ^      ^
+Ernyei, Török, Varga, Tóth, Kocsis, Kiss, Kovács
+	  ^             ^
+Ernyei, Tóth, Varga, Török, Kocsis, Kiss, Kovács
+	  ^                    ^
+
+
+Ez nagyon időigényes így biztosan nem tudná garantálni hatékonyan az adatok keletkezésével egyidejűleg biztosítandó sorrendiséget
+
+
+Sorbarendezés II.: (bináris-fa/BTREE)
+
+PowerPoint illusztráció (a PRIMARY KEY-nél és az INDEX-nél is ezt használja a MySQL, de minden más adatbázis-kezelő is)
+
+
+A végleges rendszer működése:
+
+Mivel a menetrend tábla január 1 0:00-tól december 31 23:59-ig tartalmaz minden tervezett járatot, ha azt az idő múltával szinkronban egy CURSOR-t használva sorról sorra feldolgozunk, lesznek megadhatók az egyes járatok. Természetesen egy adott járat esetén meg kell adni az azt teljesítő repülőgép lajstromjelét is. A megadott repülő felszállásakor tehát kitölthetők a jaratok tábla: jaratszam, azonosito, lajstromjel, felszallas mezői. (INSERT INTO) Amikor az adott járatot teljesítő repülő földet ér, tehát utólag lesz a leszallas mező tartalma megadható. (UPDATE)
+
+
+Amikor a jaratok táblában egy UPDATE jaratok SET leszallas=<időadat> WHERE jaratszam=<járatszám> SQL utasíás végrehajtásra kerül, akkor ennek hatására kell megtörténjen az adott repülő összrepült idejének módosítása is.
+Erre a célra szolgál a TRIGGER vagy ún. Eseményindító, amit lényegében egy olyan "tárolt eljárásnak" tekinthetünk, ami nem az adatbázishoz, hanem annak egy táblájához és ráadásul az adott táblával kapcsolatos valamilyen adatmanipulációs (INSERT INTO, DELETE, UPDATE) művelethez köthető.
+
+
+DELIMITER //
+CREATE TRIGGER leszallas AFTER UPDATE ON jaratok FOR EACH ROW
+BEGIN
+	deklarációk majd műveletek
+END//
+DELIMITER ;
+
+AFTER helyett lehet BEFOR
+UPDATE helyett pedig szerepelhetne INSERT és DELETE is
+
+
+DELIMITER //
+CREATE TRIGGER leszallas AFTER UPDATE ON jaratok FOR EACH ROW
+BEGIN
+	DECLARE ora INT;
+	DECLARE perc TINYINT;
+	DECLARE kulonbseg TIME;
+	SET kulonbseg=NEW.leszallas-felszallas;
+	UPDATE repulok SET osszora=osszora+HOUR(kulonbseg) WHERE lajstromjel=lajstromjel;
+END//
+DELIMITER ;

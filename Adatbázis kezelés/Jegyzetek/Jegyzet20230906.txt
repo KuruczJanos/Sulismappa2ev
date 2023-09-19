@@ -1,0 +1,29 @@
+Console App és Console App(.net Framework) különbségek:
+
+Előbbi kimondottan .net akármilyen OS-ben telepített körülményei között használható
+Utóbbi viszont kimondottan csak Windows-ra készülő ún parancssorból futtatható programok készítésére való.
+
+Készítsünk egy parancssori animációt, amelyben egy betű, kötőjel és egyjegyű szám meghatározta karaktersorozat szimbolizál egy autót, ami a képernyőn balról jobbra halad.
+
+Statikus vs Dinamikus osztályok
+
+Statikus példányosíás nélkül azonnal használható, a dinamikus viszont csak a példányosíást követően.
+
+
+A minimális animáció esetén másodpercenként 16 egymástól valamelyest eltérő képkockák megjelenítése szükséges.
+
+Mivel a programjaink a grafikus OS miatt valamilyen szélességgel és magassággal rendelekező, tehát behatárolt területen működnek fontos tudnunk, hogy a Console osztály által biztosított ablak milyen méretű
+
+A konzolablak szélességét karakterk számában (oszlop), magasságát pedig sorok számban adhatjuk meg (FONTOS a grafikus felületek esetén ezt a pixel-ben történő méretezéstől megkülönböztetni)
+
+
+Az objektum meghatározása egy osztály (class) formájában történik meg.
+Vagyis az osztályt tekinthetjük a majdani objektumunk egyfajta vázrajzának.
+Míg a Java csak osztályokat enged használni a C#-nál többé-kevésbé hasonló célra két megoldás is a rendelkezésünkre áll.
+
+Az osztályok tulajdonságai és viselkedései lehetnek: public/nyilvános, tehát bárhonnan hozzáférhetők és private/saját, vagyis csak az adott osztályból hozzáférhetők.
+Amennyiben egyik láthatósági/hozzáférési minősítés sem kerül megadásra, akkor a Java esetén ún. package public lép érvénybe, tehát az adott package osztályaiból azért biztosított marad az elérés. C#-nál viszont szigorúan privátként viselkedik.
+
+A C#-ban az osztály ún. REFERENCIA TÍPUS, a struktúra pedig VALUE/ÉRTÉK TÍPUS.
+(referencia alatt tulajdonképpen egy memóriacímet kell érteni. Amely a szabadon felhasználhat ún HEAP/halom memóriából származik, amit a programunkat működtető operációs rendszer menedzsel.
+az érték típus memóriája a STACK/verem, ami viszont közvetlenül a programunk által kezelt)

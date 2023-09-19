@@ -1,0 +1,47 @@
+Java esetén a JDK biztosítja a fejlesztést és a JRE szükséges a platformfüggetlen futtatáshoz
+(A lényeg az, hogy a Java program működtethető változata egy JVM-nek mondott virtuális gépet feltételez, ami
+lehet bármilyen OS-ben rendelkezésünkre álló)
+
+C#, vagyis a Microsoft .Net Framework-re alapuló programozás ugyanilyen elvek szerint működik.
+(JDK és JRE megfelelője a .Net Framework, ami jó ideje már különböző OS-ekben is hozzáférhető)
+
+
+A Java-ban egy konzolalkalmazás tulajdonképpen egy publikus statikus osztály, aminek mindenképp kell legyen egy
+main nevű metódusa, ami String[] args paraméterezésű
+
+Ugyanez a C#-ban a következőképpen néz ki: internal class Program
+Main metódus, aminek string[] args paraméterezése van
+
+A C#-ban készítsünk egy olyan programot, amely éééé-hh-nn formában lesz képes elfogadni korrekt dátumokat.
+
+Különféle feltételek teljesülésének figyelembe vétele szükséges
+
+1. é, h, n csak számjegy lehet: DE!!! 3958-57-93 is lehetséges
+2. pl. az é1 csak 1 vagy 2 lehet
+3. Ha é1 az 1-es, akkor é2 csak 9 lehet, míg amennyiben az é1 2-es, akkor csak 0 lehet (19.. vagy 20..)
+...
+X. a beírt karekterek 5. tétele csak a kötójel lehet (persze lehet pont is és perjel is, lényeg a következetesség)
+
+
+A Tiszta Kód alapelv pl. a következőt határozza meg.
+
+if(feltétel){
+	művelet az igaz esetére
+}
+
+Noha a nyelvek szintaxisa megengedi, hogy if(feltétel) művelet igaz esetére formát is használhassunk.
+
+
+C#-ban is, mint a Java-ban vannak különféle (adat)típusok, amelyek a tároló területek technikai jellemzőit 
+hivatottak meghatározni. (pl. int, double)
+
+Mivel a hónapok 01, 02, 03, ..., 09, 10, 11, 12 értékek lehetnek természetesen ezekre is fókuszálni kell.
+A hónapok napjai sem egységesek:
+
+január 31 napos
+február szökőév esetén (4-gyel osztható és ha 100-zal is osztható, akkor 400-zal is osztható kell legyen) 29 napos,
+egyébként 28
+
+
+szuldat[0]+szuldat[1]+szuldat[2]+szuldat[3] mint 4 számjegyű karaktersorozat, ha számmá konvertáljuk, akkor már
+az oszthatóság (%) művelete is alkalmazható.

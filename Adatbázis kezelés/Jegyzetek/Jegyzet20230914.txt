@@ -1,0 +1,128 @@
+RSA:
+	két kulcsos: nyilvános és titkos
+	a felek a másik által biztosított nyilvános kulccsal titkosítanak
+	a titkosított módon továbbított tartalmat viszont csak a titkos kulcsal lehet "megfejteni"
+
+Ennek alapjául két nagy (2048 vagy akár több bit-ből álló, ami tízes számrendszerben kb. 300 számjegyű) prímszám szolgál
+
+Szükségünk van a 10000 és 100000 közti valemennyi prímszámra, amiket szeretnénk egy primszamok nevezetű táblában tárolni.
+
+1. szükségünk lesz egy FUNCTION-re, ami megállapítja, hogy a paraméterként kapott szám prím-e vagy sem.
+
+DELIMITER //
+CREATE FUNCTION primteszt(szam INT) RETURNS BOOLEAN
+BEGIN
+	DECLARE valasz BOOLEAN DEFAULT TRUE;
+	DECLARE oszto INT DEFAULT 2;
+	WHILE oszto*oszto<szam DO
+		IF szam MOD oszto = 0 THEN
+			SET valasz=FALSE;
+			LEAVE;
+		END IF;
+		SET oszto=oszto+1;
+	END WHILE;
+	RETURN valasz;
+END//
+DELIMITER ;
+
+
+Eléggé hatékonytalan, ugyanis abban az esetben is folytatja vizsgálódást, amikor talált egy osztót és így egyértelműen nyilvánvalóvá vált, hogy a bemenő adat (szam) nem prímszám
+A LEAVE, vagyis a ciklusmag feltétel nélküli elhagyása csak a LOOP utasítással létrehozott ciklus esetén használható (WHILE előltesztelő, UNTIL hátultesztelő ciklus esetén nem alkalmazható)
+
+DROP FUNCTION IF EXISTS primteszt;
+DELIMITER //
+CREATE FUNCTION primteszt(szam INT) RETURNS BOOLEAN
+BEGIN
+	DECLARE valasz BOOLEAN DEFAULT FALSE;
+	DECLARE oszto INT DEFAULT 2;
+	ciklus: LOOP
+		IF szam MOD oszto = 0 THEN
+			SET valasz=FALSE;
+			LEAVE ciklus;
+		ELSE
+			SET valasz=TRUE;
+		END IF;
+		SET oszto=oszto+1;
+		IF oszto*oszto>szam THEN
+			LEAVE ciklus;
+		END IF;
+	END LOOP;
+	RETURN valasz;
+END//
+DELIMITER ;
+
+
+Fontos volt az oszto*oszto>szam kilépési feltétel (a korábban használt oszto*oszto<=szam előltesztelő WHILE ciklus feltétele helyett)
+
+A primteszt függvény fölhasználhatjuk egy primekkeresese tárolt eljárásban, azért, hogy egy véletlenszerűen előállított 10000 és 100000 közötti értéket megvizsgálhassunk és a primteszt igaz értéke esetén el is tárolhassunk egy primszamok táblában, feltéve, hogy korábban még nem történt meg.
+
+
+DROP PROCEDURE IF EXISTS primekkeresese;
+DELIMITER $$
+CREATE PROCEDURE primekkeresese(IN mennyi INT)
+BEGIN
+	DECLARE db INT DEFAULT 1;
+	DECLARE szam INT;
+	WHILE db<=mennyi DO
+		SET szam=FLOOR(RAND()*90000+10000);
+		IF primteszt(szam) THEN
+			INSERT INTO primszamok(szam) VALUES(szam);
+			SET db=db+1;
+		END IF;
+	END WHILE;
+END$$
+DELIMITER ;
+
+A fenti mechanizmus egyátalán nem szolgáltat garanciát arra, hogy egyforma értékek ne kerüljenek a primszamok táblába.
+(Ha a primszamok táblát CREATE TABLE primszamok(szam INT PRIMARY KEY); módon hoznánk létre, a korábban látottak szerint az egyformaság kivédhető volna)
+
+(27331 vizsgálni kell, hogy 2,3,4,... osztója-e)
+
+
+
+
+DROP PROCEDURE IF EXISTS primekkeresese;
+DELIMITER $$
+CREATE PROCEDURE primekkeresese(IN mennyi INT)
+BEGIN
+	DECLARE db INT DEFAULT 1;		#változók deklarálása
+	DECLARE szam INT;
+	DECLARE kesz INT DEFAULT 0;
+	DECLARE sz INT;
+	DECLARE l BOOLEAN;
+	DECLARE valami CURSOR FOR SELECT szam FROM primszamok; #cursor deklaráció
+	DECLARE CONTINUE HANDLER FOR NOT FOUND SET kesz=1; #handler deklaráció
+	WHILE db<=mennyi DO
+		SET szam=FLOOR(RAND()*90000+10000); #[10000,100000) tízezernél zárt százezernél nyitott
+		SET l=primteszt(szam);
+		IF l THEN
+			OPEN valami; #lényegében végrehajtja a fenti lekérdezést
+			ciklus: LOOP
+				FETCH valami INTO sz; #mivel a halmaz végére érve már nem tud mit letölteni
+				IF kesz THEN
+					LEAVE ciklus;
+				END IF;
+				IF szam=sz THEN
+					SET kesz=0;
+					LEAVE ciklus;
+				END IF;
+			END LOOP ciklus;
+			CLOSE valami; #azért muszáj lezárni, hogy később újra legyen megnyitható
+			IF kesz THEN
+				INSERT INTO primszamok(szam) VALUES(szam);
+				SET db=db+1;
+				SET kesz=0;
+			END IF;
+		END IF;
+	END WHILE;
+END$$
+DELIMITER ;
+
+
+A tárolt eljárásokban és függvényekben, de a majd később tanulmányozandó eseményindítókban (TRIGGER) is kötött sorrendje van a DECLARE utasításoknak:
+először a változókat kell deklarálni, majd következnek a CURSOR-ok és végül jönnek az ún. HANDLER-ek.
+
+pl. DECLARE db INT DEFAULT 1;
+	...
+    DECLARE CONTINUE HANDLER FOR 1062 SET db=db-1;
+	...

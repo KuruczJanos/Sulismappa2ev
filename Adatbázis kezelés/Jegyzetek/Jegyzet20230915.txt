@@ -1,0 +1,164 @@
+Mivel nem tudjuk, hogy a 10000 és 100000 között mennyi prímszám van, ezért pontosan nem határozható meg annak valószínűsége, hogy találunk legalább egyet
+
+91 négyzetgyöke 9 és 10 között van valahol
+Nekünk elég addig vizsgálni az osztókat 2-től kezdve
+
+91:2=45
+ 1
+
+91:3=30
+ 1
+
+91:4=22
+ 3
+
+91:5=18
+ 1
+
+91:6=15
+ 1
+
+91:7=13
+ 0
+
+Azért csak a négyzetgyökig nézegetünk, mert igaz az, hogy majdnem minden számnak páros darbaszámú osztója van.
+
+[------------------------------------------------------]
+  2  n                   2x            ny
+
+A fenti jelenségtől eltérést csak a négyzetszámok mutatnak, hiszen azok egyik osztója párjának saját magát kell tekinteni (páratlan számú ilyenkor az osztók darbaszáma)
+
+
+Mivel úgy tűnik az XAMPP virtualizált környezetben a 10000 és 100000 közti tartomány túl nagy, ezért módosítottam a programot, hogy csak 10 és 100 közti részt vizsgálja
+Igazából ez sem vezetett eredményre.
+
+
+
+
+CREATE DEFINER=`root`@`localhost` FUNCTION `primteszt`(szam INT) RETURNS tinyint(1)
+BEGIN
+	DECLARE valasz BOOLEAN DEFAULT FALSE;
+	DECLARE oszto INT DEFAULT 2;
+	ciklus: LOOP
+		IF szam MOD oszto = 0 THEN
+			SET valasz=FALSE;
+			LEAVE ciklus;
+		END IF;
+		SET oszto=oszto+1;
+		IF oszto*oszto>szam THEN
+			SET valasz=TRUE;
+			LEAVE ciklus;
+		END IF;
+	END LOOP;
+	RETURN valasz;
+END;
+
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `primekkeresese`(IN mennyi int)
+BEGIN
+  DECLARE db int DEFAULT 1; #változók deklarálása
+  DECLARE szam int;
+  DECLARE kesz int DEFAULT 0;
+  DECLARE sz int;
+  DECLARE l boolean;
+  DECLARE valami CURSOR FOR
+    SELECT szam FROM `primszamok`; #cursor deklaráció
+  DECLARE CONTINUE HANDLER FOR NOT FOUND
+    SET kesz = 1; #handler deklaráció
+  WHILE db <= mennyi DO
+    SET szam = FLOOR(RAND() * 90 + 10); #[10000,100000) tízezernél zárt százezernél nyitott
+    SELECT szam;
+    SET l = primteszt(szam);
+    IF l THEN
+      OPEN valami; #lényegében végrehajtja a fenti lekérdezést
+      ciklus: LOOP
+        FETCH valami INTO sz; #mivel a halmaz végére érve már nem tud mit letölteni
+        IF kesz THEN
+          LEAVE ciklus;
+        END IF;
+        IF szam = sz THEN
+          SET kesz = 0;
+          LEAVE ciklus;
+        END IF;
+      END LOOP ciklus;
+      CLOSE valami; #azért muszáj lezárni, hogy később újra legyen megnyitható
+      IF kesz THEN
+        INSERT
+          INTO `primszamok`
+          (`szam`)
+        VALUES
+          (szam);
+        SET db = db + 1;
+        SET kesz = 0;
+      END IF;
+    END IF;
+  END WHILE;
+END;
+
+
+CALL primekkeresese(2);
+
+
+Amint a futásból látható előkerült a 31, ami tudomásunk szerint prímszám, így egész biztos, hogy programbeli megfogalmazás okozza a problémát:
+
+
+31 négyzetgyöke 5 és 6 között szerepel, ami alapján 2,3,4,5,6-tal való oszthatóságot elég vizsgálni
+
+31:2=15
+ 1
+
+31:3=10
+ 1
+
+31:4=7
+ 3
+
+31:5=6
+ 1
+
+31:6=5
+ 1
+
+KONKLÚZIÓ, hogy a 31 prímszám így valószínű, hogy a primteszt FUNCTION-ünk lesz hibás.
+Kiderült, hogy nincs vele semmi probléma, hanem csak annyi történt, hogy a 784. kiíráskor elfogytak a virtuális környezet erőforrásai így a megtalált 31 már nem lehetett elhelyezni a korábban megtalált 37 mellé, hogy ennek hatására érjen véget a ciklus, teljesítve, hogy talált 2 olyan prímet, amely még nem szerepelt a primszamok táblában.
+
+
+Ahhoz, hogy egy adott intervallumból véletlenül kiválasztott szám prím mivoltának megállapítására irányuló vizsgálattal kapcsolatban lehessen valamilyen 0 és 1 közti valószínűségünk, fontos lenne tudni azt, hogy az adott intervallumban hány darab szám szerepel és azok közül mennyi a prím.
+
+10-től 99-ig 90 db szám van, no de mennyi itt a prímek száma, amit leginkább csak úgy tudunk megállapítani, ha vesszük sorban a 90 db számot és megszámoljuk a prímeket.
+
+
+DELIMITER //
+CREATE FUNCTION primekszama(kezdo INT, vege INT) RETURNS INT
+BEGIN
+	DECLARE db INT DEFAULT 0;
+	DECLARE i INT;
+	##DECLARE w INT; #egyik fajta csere megkövetel egy plusz tárolót
+	IF kezdo>vege THEN
+		#RETURN db;
+
+		#kezdo=99 vege=10
+		##SET w=kezdo;
+		##SET kezdo=vege;
+		##SET vege=w;
+		#itt nincs szükség plusz tárolóra, de bekövetkezhet az INT túlcsordulása
+		SET kezdo=kezdo+vege; #kezdo=109
+		SET vege=kezdo-vege; #vege=99 kezdo=109
+		SET kezdo=kezdo-vege; #kezdo=10 vege=99
+	END IF;	
+	SET i=kezdo;
+	WHILE i<=vege DO
+		IF primteszt(i) THEN
+			SET db=db+1;
+		END IF;
+		SET i=i+1;
+	END WHILE;
+	RETURN db;
+END//
+DELIMITER ;
+
+
+Az elkészül függvény megmondta, hogy 10-től 99-ig található 90 db egézszámból 21 a prím, de azt is megtudta mondani, hogy 10000-től 99999-ig pedig 8363 darab prím szerepel.
+
+A 10-től 99-ig terjedő számok közül 21/90 (kedvező/összes eset) valószínűséggel választunk prímet: ~23%
+A 10000-től 99999-ig terjedő számok közül 8363/90000 valószínűséggel választunk prímet: ~9%

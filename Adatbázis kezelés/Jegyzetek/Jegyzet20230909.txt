@@ -1,0 +1,260 @@
+Adatbázis-kezelés II
+
+IttAlszomHotel
+
+Szobaszam	Ferohely	Ar	Kezdete		Vege
+150		2		30000	2023-09-09	2023-09-15
+10005		5		21500	2023-09-09	2023-09-10
+
+
+RENDUNDANCIA: fölöslegesen tárolunk újdonságértékkel nem bíró tartalmakat, többszöresen (pl. férőhelyek száma és az ár ilyen)
+
+Az adatfeldolgozás anomáliái (rendellenességek):
+
+I. BŐVÍTÉSI (a rosszul kitalált adattárolási struktúrában nagyon szigorú feltételek szerint, vagy éppenséggel kényszerűen hiányosan leszünk képesek a tudomásunkra jutott ismereteket tárolni /ADAT/)
+
+II. MÓDOSÍTÁSI (mivel a rossz tárolási konstrukció nagy mértékben redundáns, így az ilyen tartalmakban elkövetett hibák nagy figyelmet követelő módon lesznek csak kijavíthatók /INFORMÁCIÓ/)
+
+III. TÖRLÉSI (a jelentkező adattárolási rendellenességek okozhatják akár azt is, hogy nyilvántartásban már szereplő tétel a törlés következtében véglegesen eltűnik)
+
+
+ETK=egyed-tulajdonság-kapcsolat
+
+Egyed az adatnyilvántartás egy lényegi egysége
+Tulajdonság az egyed jellemzője
+Kapcsolat az egyedek közti összefüggés
+(1:1 - egy az egyhez kapcsolat, amelynél az egyik egyed egy tételéhez a másik egy pontosan egy tétele kapcsolódik
+1:N - egy a többhöz, aminél az egyik egyed egy tételéhez a másik egyed 0 vagy akárhány tétele kapcsolódik
+N:M - több a többhöz, amivel kapcsolatban el kell gondolkodnunk a kapcsolat több 1:N kapcsolódású szétbontásáról)
+
+
+szobak(szobaszam*, ferohely, ar)
+
+KULCS: egy olyan tulajdonság, amely egyedileg azonosítja egyed előfordulásait
+(kulcsjelölt, elsődleges kulcs/primary key, idegenkulcs/foreign key) 
+
+foglalasok(szobaszam, kezdete, vege)
+(NEM feltétlenül kell minden egyednek legyen ELSŐDLEGES KULCSA, bár itt pl. a szobaszám és kezdete összetett kulcsként meghatározható volna)
+
+
+RELÁCIÓS ADATBÁZIS-KEZELÉS
+(adatmodellek lehetnek: hierarchikus, hálós, relációs)
+
+(2n, ahol n értéke 1, 2, 3, ... lehet: PÁROSAK; 2n-1 PÁRATLANOK)
+
+
+Reláció nem más, mint halmazok direkt-szorzatának (Descartes szorzat) a részhalmaza.
+
+A={1;3;7} B={1;2;3;4;5}
+
+A unió B = {1;2;3;4;5;7} másként ha x eleme A-nak vagy B-nek
+A metszet B = {1;3} ha x eleme A-nak és B-nek is
+
+
+AxB = {(1,1);(1,2);(1,3);(1,4);(1,5);(3,1);(3,2);(3,3);(3,4);(3,5);(7,1);(7,2);(7;3);(7,4);(7,5)}
+
+R részhalmaza AxB = {(1,1);(1,2);(1,3);(1,4);(1,5);(3,3);(3,4);(3,5)}
+
+(a legyen eleme A, b legyen eleme B => a<=b)
+
+
+Egy személyt a következő adatok jellemzhetnek:
+
+- NÉV => magyarországi összes lehetséges nevek halmaza
+- SZÜLETÉSI DÁTUM => 1000.01.01-től pl. 2023.09.09-ig az összes dátum
+- ANYJA NEVE => magyarországi összes lehetséges nevek halmaza
+- LAKCÍM
+- TELEFONSZÁM
+- ...
+
+
+
+LOGIKAI modell: elméletileg foglalkozik az adatok, adattárolási megoldásokkal, tehát nem veszi figyelembe az ADATBÁZIS-KEZELŐk, időnként egymástól eltérő sajátosságait.
+
+FIZIKAI modell: a kiválasztott adatbázis-kezelőnek megfelelő, technikailag részletezett módon meghatározza a kialakítandó objektumokat.
+
+
+Microsoft SQL Server
+MySQL
+
+(Dinamikus web-es tartalomkiszolgálás esetén jellemző a Linux operációs rendszer, amelyben telepítésre és konfigurálásra kerül az Apache webszerver és a MySQL adatbázisszerver szolgáltatás.
+A webszerver, manapság megfelelő tanusíványok birtokában az internet irányába a 443-as port-ját láttatja /PUBLIKUS/, hogy az legyen https:// kezdetű URL-ek webböngészőbe történő beírasakor elérhető
+Ezzel szemben, mivel a MySQL tulajdonképpen a Backend részét képezi nem kell, hogy külvilág számára látassa a 3306-os port-ját /PRIVÁT/)
+
+
+
+A rendezett adataink nagyságrendekkel gyorsabben kezelhetők, mint a rendezetlenek.
+
+
+
+
+CREATE TABLE szobak (
+	szobaszam SMALLINT UNSIGNED NOT NULL ,
+	ferohely TINYINT UNSIGNED NOT NULL ,
+	ar MEDIUMINT UNSIGNED NOT NULL ,
+	PRIMARY KEY (szobaszam));
+
+
+szobak -1----szobaszam----N- foglalasok
+
+
+A kulcs idegenkulcs kapcsolat esetén a PRIMARY KEY és a FOREIGN KEY adatjellemzői KOMPATIBILISEK kell legyenek (Mi olvasatunkban kukkra egyformák)
+Amely mezőt/oszlopot idegenkulcsnak szeretnénk szánni, azt INDEX-elni is kell.
+
+
+
+
+STORED PROCEDURE/FUNCTION - adatbázis szintű
+TRIGGER - tábla szintű programozási lehetőségek
+
+(tárolt eljárás vagy függvény, eseményindító, ami annyit tesz, hogy a táblákhoz kötött program, a DML=data manipulating language/adatmanipulációs nyelv utasításai hatására fog végrehajtódni
+
+
+AZ XAMPP Control Panel Shell funkciója:
+
+mysql -u root
+
+utána a prompt így néz ki:
+
+MariaDB [(none)]>
+
+
+SHOW DATABASES;
+
+
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| ittalszomhotel     |
+| mysql              |
+| performance_schema |
+| phpmyadmin         |
+| test               |
++--------------------+
+
+
+exit vagy quit szolgál a mysql shell-jéből történő kilépésre
+
+
+Ugyanitt a php parancsot kiadva tulajdonképpen kapcsolatba lépünk a PHP interpreterrel. Ez a fordíó program egy szöveget kell gépikódra alakítás után végrehajtson
+
+(php index.php módon adhatja át az Apache a feldolgozandó file-t, aminek OUTPUT-ja jut el a klienshez)
+
+
+php
+(itt mutatja, hogy várja a feldolgozandót, amit közvetlenül begépelve adunk meg. A feldolgozás akkor kezdődik meg, amikor beírás közben leütjük a CTRL+Z billentyűkombinációt /Az ASCII 26-os kódú karaktere: EOF ~ end of file/)
+
+<?php
+echo "Bálint Dezső (c) 2023.";
+?>
+^Z
+
+
+
+DELIMITER //
+CREATE PROCEDURE Tipp1()
+BEGIN
+	SELECT 13;
+END//
+DELIMITER ;
+
+(Amikor ezt végrehajtjuk, az adatbázis szintjén létre jön a Tipp1 tárolt eljárás egy külön kategóriában. A tárolt eljárást a CALL Tipp1(); SQL utasítással indíthatjuk.)
+
+
+
+DELIMITER //
+CREATE PROCEDURE Tipp1()
+BEGIN
+	SELECT 13 AS szam;
+END//
+DELIMITER ;
+
+
+
+DELIMITER $$
+CREATE PROCEDURE LottoTippek(IN mennyi INT)
+BEGIN
+	DECLARE db INT DEFAULT 1;
+	DECLARE CONTINUE HANDLER FOR 1062 SET db=db-1;
+	CREATE TABLE szamok(szam INT PRIMARY KEY);
+	WHILE db<=mennyi DO
+		INSERT INTO szamok(szam) VALUES(FLOOR(RAND()*90+1));
+		SET db=db+1;
+	END WHILE;
+	SELECT * FROM szamok;
+	DROP TABLE szamok;
+END$$
+DELIMITER ;
+
+
+Eljárás vs Függvény:
+
+CREATE FUNCTION a_fuggvenyneve([parameterek]) RETURNS visszatérési_adattípus
+BEGIN
+
+	RETURN visszatérési_értek;
+END
+
+
+PROCEDURE paraméterei IN (bemenő) OUT (kimenő) INOUT(be-kimenő) minősítéssel lesznek elláthatók, a FUNCTION esetén csak IN képzelhető el így ezért azt ki sem kell tenni.
+
+Kimondottan az OUT és INOUT minősítésű paraméterek esetén fontos, hogy azok ún. SESSION változók legyenek, olyanok, amelyek egy MySQL-lel végrehajtott munkafolyatban állnak rendelkezésre.
+pl. SET @bekimeno=15;  eljárás(@bekimeno) ... SELECT @bekimeno;
+
+
+
+Program- vagy vezérlési szerkezetek:
+
+1. SZEKVENCIA (két SQL utasítást egymásután írunk)
+2. SZELEKCIÓ (elágazás, esetszétválasztás) erre:
+
+IF feltétel THEN
+	utasítások az igaz esetére
+ELSE
+	utasítások hamis esetére
+END IF;
+
+Használható benne az ELSEIF feltétel THEN...
+
+(IF jellemzően ún. kétirányú elágazás megfogalmazására használatos.
+
+IF szam>5 THEN
+	SELECT "Nagyobb, mint 5" AS valasz;
+END IF;
+
+Többirányú elágazás:
+
+CASE változóneve
+	WHEN értéke1 THEN végrehajtandó művelet;
+	WHEN értéke2 THEN végrehajtandó művelet;
+	WHEN értéke3 THEN végrehajtandó művelet;
+	ELSE egyébként ez lesz végrehajtandó
+END CASE;
+
+
+3. ITERÁCIÓ (ciklus, ismétlődés)
+
+itt van előltesztelő, ahol ciklusmag előtt szerepel az ismétlési feltétel
+
+WHILE feltétel DO
+	ciklusmag
+END WHILE;
+
+hátultesztelő esetén a feltétel a ciklusmag után lesz
+
+REPEAT
+	ciklusmag
+UNTIL feltétel
+END REPEAT;
+
+
+
+
+
+
+
+
+
+
+

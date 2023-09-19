@@ -1,0 +1,224 @@
+Stored procedure/tárolt eljárás
+(stored function)
+
+Eljárás vs Függvény
+A függvénynek mindig van visszatérési értéke
+
+Az adatbázis-kezelők ezeket az adatbázisok szintjén teszik használhatóvá
+(Léteznek olyan programozási megoldások is az adatbázis-kezelők esetén, amelyek a táblákhoz kapcsolódó funkcionalitást biztosítanak: ez a TRIGGER, ami lényegében DML data manipulating language utasításai esetén kerülnek végrehajtásra: INSERT INTO, UPDATE, DELETE)
+
+DELIMITER $$
+CREATE PROCEDURE elso()
+BEGIN
+	SELECT "Bálint Dezső (c) 2023." AS copyright;
+END$$
+DELIMITER ;
+
+A $$ olyan karaktersorozat, amit más célokra nem használ a MySQL így alkalmas arra, hogy CREATE PROCEDURE lezáró szimbóluma legyen a ; helyett. Azért szükséges, mert a köztes pontosvesszők értelmezési zavart okoznának.
+(// is lehetne)
+
+mysql -u root
+
+A fenti paranccsal tudunk a root user nevében bejelentkezni a MySQL parancssorába, ahol kiadhatunk SQL utasításpkat.
+A sikeres belépést: MariaDB [(none)]> prompt jelzi, ami arról tájékoztatm hogy nem állunk semmilyen adatbázissal kapcsolatban: (none)
+USE peldak
+
+quit vagy exit szolgál arra, hogy kilépjünk a MySQL környezetből az XAMPP Shell-jében
+
+# php
+<?php
+echo "<h1>Főcím</h1>";
+?>
+^Z
+<h1>Fcm</h1>
+
+A fenti példa azt mutatja, hogy az XAMPP Shell-jét miként használhatjuk arra, hogy beindítsuk a PHP interpretert, a megadott kód, fordításával egyidejű végrehajtása érdekében.
+^Z jelöli az ASCII 26-os kódú EOF end of file elnevezésű karakterét, ami egyszersmind a begépelés végét is jelenti.
+
+
+
+A CREATE SQL utasítással nem lehet többször létrehozni ugyanolyan azonosítóval rendelkező objektumot. Amennyiben mindig újra meg újra szeretnénk a CREATE-et használni, fontos előtte a DROP utasíás is, ami természetesen a néven nevezett objektumot tudja törölni.
+
+DROP PROCEDURE elso;
+CREATE PROCEDURE elso()
+...
+
+DROP PROCEDURE IF EXISTS masodik;
+DELIMITER //
+CREATE PROCEDURE masodik(IN szam INT)
+BEGIN
+	SELECT szam, FLOOR(RAND()*szam+1);
+END//
+DELIMITER ;
+
+A CREATE és DROP SQL utasításoknak van IF klauzulája/záradéka, amelynél a létezés: EXISTS vagy nem létezés NOT EXISTS ellenőrizhető, hogy a végrehajtás ennek függvényében történjen meg. (Fent: ha létezik a masodik procedúra, akkor előbb töröljük, hogy ne okozzon gondot a létrehozás)
+A paraméterek lehetnek bemenők (IN), kimenők (OUT) és be-kimenők (INOUT). CSAK PROCEDURE esetén, FUNCTION csak bemenő paramétert feltételez, így azt megadni sem kell.
+A paraméter meghatározása olyan, mint a CREATE TABLE esetén az oszlopok/mezők megadása:
+<azonosító> <adattípus> szerkezetű.
+
+DELIMITER //
+CREATE PROCEDURE lottoszamok()
+BEGIN
+	DECLARE db INT DEFAULT 1;
+	WHILE db<=5 DO
+		SELECT FLOOR(RAND()*90+1);
+		SET db=db+1;
+	END WHILE;
+END//
+DELIMITER ;
+
+Ebben a változatban kijöhet ugyanaz szám többször is.
+
+DROP PROCEDURE lottoszamok;
+DELIMITER //
+CREATE PROCEDURE lottoszamok()
+BEGIN
+	DECLARE db INT DEFAULT 1;
+	CREATE TABLE szamok(szam INT PRIMARY KEY);
+	WHILE db<=5 DO
+		INSERT INTO szamok(szam) VALUES(FLOOR(RAND()*90+1));
+		SET db=db+1;
+	END WHILE;
+	SELECT * FROM szamok;
+	DROP TABLE szamok;
+END//
+DELIMITER ;
+
+Ebben a változatban mivel elsődleges kulcs minősítéssel ellátott mezőben tároljuk egy ideiglenes táblában a számokat, ha ugyanaz előfordul ún. KULCSÜTKÖZÉS lép fel, ami miatt a program leáll és nem törlődik a tábla sem.
+
+
+
+DROP PROCEDURE lottoszamok;
+DELIMITER //
+CREATE PROCEDURE lottoszamok()
+BEGIN
+	DECLARE db INT DEFAULT 1;
+	DECLARE CONTINUE HANDLER FOR 1062 SET db=db-1;
+	CREATE TABLE szamok(szam INT PRIMARY KEY);
+	WHILE db<=5 DO
+		INSERT INTO szamok(szam) VALUES(FLOOR(RAND()*90+1));
+		SET db=db+1;
+	END WHILE;
+	SELECT * FROM szamok;
+	DROP TABLE szamok;
+END//
+DELIMITER ;
+
+Ebben alkalmazott CONTINUE HANDLER biztosítja, hogy a MySQL 1062-es hibakódjánál, ne álljon le a program, hanem folytatódjon, mégpedig a darabszámláló csökkentésével.
+(A CONTINUE HANDLER lényegében a Java try...catch megoldásához hasonlít)
+
+Saját négyzetgyök vonást megvalósító függvény:
+
+DROP FUNCTION IF EXISTS negyzetgyok;
+DELIMITER $$
+CREATE FUNCTION negyzetgyok(szam INT) RETURNS DOUBLE
+BEGIN
+	DECLARE gyok DOUBLE DEFAULT 1;
+	DECLARE lepes DOUBLE DEFAULT 1;
+	WHILE lepes>0.000001 DO
+		IF gyok*gyok=szam THEN
+			SET lepes=0.000001;
+		ELSEIF gyok*gyok<szam THEN
+			SET gyok=gyok+lepes;
+		ELSE
+			SET gyok=gyok-lepes;
+			SET lepes=lepes/10;
+		END IF;
+	END WHILE;
+	RETURN gyok;
+END$$
+DELIMITER ;
+
+Itt a WHILE ciklus miatt mikor megtaláljuk a pontosan meghatározható négyzetgyököt pl. a 16 esetén a 4-et, akkor a SET lepes=0.000001; értékadással gondoskodunk a ciklusfeltétel nem teljesüléséről és így a ciklus leállásáról.
+
+
+DROP FUNCTION IF EXISTS negyzetgyok;
+DELIMITER $$
+CREATE FUNCTION negyzetgyok(szam INT) RETURNS DOUBLE
+BEGIN
+	DECLARE gyok DOUBLE DEFAULT 1;
+	DECLARE lepes DOUBLE DEFAULT 1;
+	ciklus: LOOP
+		IF gyok*gyok=szam THEN
+			LEAVE ciklus;
+		ELSEIF gyok*gyok<szam THEN
+			SET gyok=gyok+lepes;
+		ELSE
+			SET gyok=gyok-lepes;
+			IF lepes>0.000001 THEN
+				SET lepes=lepes/10;
+			ELSE
+				LEAVE ciklus;
+			END IF;
+		END IF;
+	END LOOP ciklus;
+	RETURN gyok;
+END$$
+DELIMITER ;
+
+A LOOP teljesen általános ismétlődést tesz lehetővé, amiből a LEAVE segítségével tudunk kilépni, mint Java-ban a break-kel. Fontos tudnunk azt, hogy a Java ciklusainál használható continue itt az SQL-ben ITERATE <ciklusazonosító>; módon lesz használható.
+
+
+Készítsünk egy Lottó-szimulációt, amellyel lehetőség lesz tetszőleges számú sorsolást lebonyolítani és annak eredményeit egy erre a célra rendszeresített táblában eltárolni.
+A szándék az, hogy pl. 1000000 számsorsolást lebonyolítva, az egyes sorsolások alkalmával kiválasztott számokra vonatkozóan tehessünk megállapításokat:
+
+Melyik 5 szám fordult elő legtöbbször?
+Melyik 5 szám fordult elő legkevesebbszer?
+
+Egy olyan procedúrát kell írni, aminek bemenő adata/paramétere lesz a számsorsolások mennyisége.
+
+CREATE PROCEDURE LottoSzimulacio(IN mennyi INT)
+...
+CALL LottoSzimulacio(10000000);
+
+
+A korábbi lottoszamok tárolt eljárás az eredményt ilyen formában közli:
+
+szam
+40
+42
+48
+63
+82
+
+Tehát egy egyoszlopos táblázat 5 sorát mutatja (SELECT * FROM szamok;)
+
+Az a gond ezzel, hogy nekünk a szimulációnál egy legalább 6 oszlopos táblázat kell:
+
+idopont		szam1	szam2	szam3	szam4	szam5
+2023-09-11 11:34   40	42	48	63	82
+
+Egy ilyen adathalmazból azt megállapítani, hogy melyik szám hányszor fordult elő úgy lehetne, hogy készítünk egy kétoszlopos táblázatot:
+
+szam	hanyszor
+1	52348
+...
+90	34111
+
+Ezt a táblát a 6 oszlopos soronkénti feldolgozása során folyamatosan aktualizálhatjuk_
+
+UPDATE statisztika SET hanyszor=hanyszor+1 WHERE szam=<aktuális érték>;
+
+DECLARE i INT; deklaráció egy olyan INT típusú változót eredményez, aminek NULL értéke lesz, ami a semmit jelenti, ilyet akkor teszünk, ha később kívánjuk az értékét meghatározni. Tehát az általunk alkalmazott DEFAULT nem kötelező. Fontos azonban tudni, hogy a NULL miatt pl. aritmetikai műveletek nem igazán lesznek használhatók.
+
+
+DROP PROCEDURE IF EXISTS Lekerdezesek;
+DELIMITER $$
+CREATE PROCEDURE Lekerdezesek()
+BEGIN
+	DECLARE db INT;
+	DECLARE szam1 INT;
+	CREATE TABLE IF NOT EXISTS statisztika(szam INT PRIMARY KEY, db INT);
+	SET db=1;
+	WHILE db<=90 DO
+		INSERT INTO statisztika(szam,db) VALUES(db,0);
+		SET db=db+1;
+	END WHILE;
+	SET db=1;
+	WHILE db<=100 DO
+		SET szam1=FLOOR(RAND()*90+1);
+		UPDATE statisztika SET db=db+1 WHERE szam=szam1;
+		SET db=db+1;
+	END WHILE;
+END$$
+DELIMITER ;
